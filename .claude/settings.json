@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find c:UsersAdministratorDocumentsClaude -type f -iname *playmatrix*)",
+      "Bash(find c:UsersAdministratorDocumentsClaude -type d -iname *playmatrix*)",
+      "Bash(find c:UsersAdministratorDocumentsClaude -type d -iname *matrix*)",
+      "WebFetch(domain:www.playmetrics.com)",
+      "WebFetch(domain:playmetrics.com)",
+      "WebSearch",
+      "WebFetch(domain:www.softwareadvice.com)",
+      "WebFetch(domain:www.capterra.com)",
+      "WebFetch(domain:www.g2.com)",
+      "WebFetch(domain:help.playmetrics.com)",
+      "WebFetch(domain:home.playmetrics.com)"
+    ]
+  }
+}

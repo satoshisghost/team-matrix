@@ -1,0 +1,1844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Team Matrix - Team Command Center</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    /* ===== THEME VARIABLES ===== */
+    :root {
+      --bg-deep: #0a0a1a;
+      --bg-card: #111128;
+      --bg-surface: #1a1a3e;
+      --bg-input: #1a1a3e;
+      --accent: #00d4ff;
+      --accent-glow: rgba(0,212,255,0.3);
+      --accent2: #ff3d71;
+      --accent3: #00e676;
+      --accent4: #a855f7;
+      --text: #e8e8f0;
+      --text-dim: #7a7a9e;
+      --border: rgba(0,212,255,0.15);
+      --border-solid: rgba(0,212,255,0.25);
+      --radius: 14px;
+      --nav-bg: rgba(10,10,26,0.97);
+      --header-bg: rgba(10,10,26,0.95);
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    [data-theme="light"] {
+      --bg-deep: #f0f2f8;
+      --bg-card: #ffffff;
+      --bg-surface: #e8ecf5;
+      --bg-input: #f5f7ff;
+      --accent: #0099cc;
+      --accent-glow: rgba(0,153,204,0.2);
+      --accent2: #e53e6e;
+      --accent3: #00a855;
+      --accent4: #8b44d4;
+      --text: #1a1a2e;
+      --text-dim: #6b7280;
+      --border: rgba(0,153,204,0.2);
+      --border-solid: rgba(0,153,204,0.35);
+      --nav-bg: rgba(255,255,255,0.97);
+      --header-bg: rgba(240,242,248,0.95);
+      --shadow: 0 4px 24px rgba(0,0,0,0.12);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Exo 2', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 0;
+      animation: gridMove 20s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes gridMove {
+      0% { transform: translate(0,0); }
+      100% { transform: translate(60px,60px); }
+    }
+
+    #root { position: relative; z-index: 1; }
+
+    /* ===== NAVIGATION ===== */
+    .nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--nav-bg);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0 env(safe-area-inset-bottom, 8px);
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 6px 12px; border: none; background: none;
+      color: var(--text-dim);
+      font-family: 'Exo 2', sans-serif; font-size: 9px; font-weight: 600;
+      cursor: pointer; transition: all 0.3s;
+      text-transform: uppercase; letter-spacing: 1px; min-width: 54px;
+    }
+    .nav-item.active { color: var(--accent); filter: drop-shadow(0 0 6px var(--accent-glow)); }
+    .nav-item svg { width: 22px; height: 22px; stroke-width: 1.5; }
+
+    /* ===== HEADER ===== */
+    .header {
+      padding: 16px 20px 12px;
+      padding-top: calc(env(safe-area-inset-top, 16px) + 8px);
+      background: var(--header-bg);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-brand { display: flex; flex-direction: column; }
+    .header h1 {
+      font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 900;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent4) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      letter-spacing: 3px;
+    }
+    .header .subtitle {
+      font-size: 10px; color: var(--text-dim);
+      letter-spacing: 2px; text-transform: uppercase; margin-top: 2px;
+    }
+    .header-actions { display: flex; gap: 10px; align-items: center; }
+
+    /* ===== THEME TOGGLE ===== */
+    .theme-toggle {
+      width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border);
+      background: var(--bg-surface); color: var(--text); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      transition: all 0.3s;
+    }
+    .theme-toggle:hover { border-color: var(--accent); }
+
+    /* ===== PAGE ===== */
+    .page {
+      padding: 16px 16px 100px;
+      max-width: 640px; margin: 0 auto;
+      animation: fadeUp 0.35s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== SUB-TABS ===== */
+    .sub-tabs {
+      display: flex; gap: 6px;
+      overflow-x: auto; padding: 12px 0 8px;
+      scrollbar-width: none; -ms-overflow-style: none;
+    }
+    .sub-tabs::-webkit-scrollbar { display: none; }
+    .sub-tab {
+      flex-shrink: 0; padding: 7px 16px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; font-family: 'Exo 2', sans-serif;
+      border: 1px solid var(--border); background: var(--bg-surface);
+      color: var(--text-dim); cursor: pointer; transition: all 0.25s;
+      text-transform: uppercase; letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .sub-tab.active {
+      background: var(--accent); color: #000;
+      border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px; margin-bottom: 12px;
+      position: relative; overflow: hidden; transition: all 0.3s;
+      box-shadow: var(--shadow);
+    }
+    .card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .card:hover::before { opacity: 1; }
+    .card-title {
+      font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700;
+      color: var(--accent); letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .card-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px;
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      padding: 11px 22px; border: none; border-radius: 10px;
+      font-family: 'Exo 2', sans-serif; font-weight: 700; font-size: 13px;
+      cursor: pointer; transition: all 0.3s; text-transform: uppercase;
+      letter-spacing: 1px; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #0099cc); color: #000; box-shadow: 0 4px 16px var(--accent-glow); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 24px var(--accent-glow); }
+    .btn-danger { background: linear-gradient(135deg, var(--accent2), #cc1144); color: #fff; }
+    .btn-success { background: linear-gradient(135deg, var(--accent3), #00b35a); color: #000; }
+    .btn-purple { background: linear-gradient(135deg, var(--accent4), #7b22d4); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--accent); }
+    .btn-full { width: 100%; justify-content: center; }
+    .btn-sm { padding: 7px 14px; font-size: 11px; }
+    .btn-icon { padding: 8px; width: 36px; height: 36px; justify-content: center; }
+
+    /* ===== INPUTS ===== */
+    .input-group { margin-bottom: 14px; }
+    .input-group label {
+      display: block; font-size: 11px; color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;
+    }
+    .input {
+      width: 100%; padding: 11px 14px;
+      background: var(--bg-input); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-family: 'Exo 2', sans-serif; font-size: 14px;
+      outline: none; transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+    select.input {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2300d4ff'%3E%3Cpath d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 14px center;
+    }
+    textarea.input { resize: vertical; min-height: 76px; }
+
+    /* ===== ROSTER ===== */
+    .player-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .player-row:last-child { border-bottom: none; }
+    .player-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent4));
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 14px;
+      color: #000; flex-shrink: 0;
+    }
+    .player-info { flex: 1; min-width: 0; }
+    .player-name { font-weight: 600; font-size: 14px; }
+    .player-meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ===== BADGES ===== */
+    .badge {
+      display: inline-block; padding: 3px 9px; border-radius: 20px;
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .badge-game    { background: var(--accent2); color: #fff; }
+    .badge-practice { background: var(--accent3); color: #000; }
+    .badge-travel  { background: #f5a623; color: #000; }
+    .badge-meeting { background: var(--accent4); color: #fff; }
+    .badge-tryout  { background: var(--accent); color: #000; }
+    .badge-other   { background: var(--bg-surface); color: var(--text-dim); border: 1px solid var(--border); }
+    .badge-offense { background: #f59e0b; color: #000; }
+    .badge-defense { background: #3b82f6; color: #fff; }
+    .badge-special_teams { background: #8b5cf6; color: #fff; }
+    .badge-conditioning  { background: #10b981; color: #000; }
+    .badge-skills  { background: #06b6d4; color: #000; }
+
+    /* ===== STAT BOXES ===== */
+    .stat-row { display: flex; gap: 10px; margin-bottom: 14px; }
+    .stat-box {
+      flex: 1; background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; text-align: center;
+    }
+    .stat-number {
+      font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: 900;
+      color: var(--accent);
+    }
+    .stat-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+
+    /* ===== MEDIA GRID ===== */
+    .media-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .media-card {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; text-align: center;
+      cursor: pointer; transition: all 0.3s;
+    }
+    .media-card:hover { border-color: var(--accent); transform: scale(1.02); }
+    .media-icon { font-size: 32px; margin-bottom: 8px; }
+    .media-title { font-size: 12px; font-weight: 600; margin-bottom: 4px; word-break: break-word; }
+    .media-type { font-size: 10px; color: var(--text-dim); text-transform: uppercase; }
+
+    /* ===== DRILL CARDS ===== */
+    .drill-card {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; margin-bottom: 10px;
+      transition: all 0.3s;
+    }
+    .drill-card:hover { border-color: var(--accent); }
+    .drill-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .drill-name { font-weight: 600; font-size: 14px; flex: 1; margin-right: 8px; }
+    .drill-meta { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+    .drill-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
+    .drill-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+    /* ===== SCORE RATING ===== */
+    .score-group { margin-bottom: 16px; }
+    .score-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .score-label { font-size: 12px; color: var(--text-dim); }
+    .score-value { font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: 700; }
+    .score-bar { display: flex; gap: 3px; }
+    .score-pip {
+      flex: 1; height: 6px; border-radius: 3px;
+      background: var(--bg-deep); border: 1px solid var(--border);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .score-pip.active { border-color: transparent; }
+
+    /* ===== EVAL CARD ===== */
+    .eval-card {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; margin-bottom: 10px;
+    }
+    .eval-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+    .eval-player { font-weight: 700; font-size: 14px; }
+    .eval-date { font-size: 11px; color: var(--text-dim); }
+    .eval-criteria-row { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+    .eval-criteria-row:last-of-type { border-bottom: none; }
+    .eval-overall {
+      text-align: center; margin-top: 10px;
+      font-family: 'Orbitron', sans-serif; font-size: 22px; font-weight: 900;
+    }
+
+    /* ===== PRACTICE PLAN ===== */
+    .practice-card {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; margin-bottom: 10px; cursor: pointer;
+      transition: all 0.3s;
+    }
+    .practice-card:hover { border-color: var(--accent); }
+    .practice-title { font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+    .practice-meta { font-size: 11px; color: var(--text-dim); display: flex; gap: 12px; flex-wrap: wrap; }
+    .drill-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .drill-item:last-child { border-bottom: none; }
+    .drill-order { font-family: 'Orbitron', sans-serif; font-size: 11px; color: var(--accent); width: 20px; }
+    .drill-item-name { flex: 1; font-size: 13px; }
+    .drill-item-dur { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+
+    /* ===== DEPTH CHART ===== */
+    .depth-position { margin-bottom: 14px; }
+    .depth-pos-name {
+      font-size: 11px; font-weight: 700; color: var(--accent);
+      text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;
+    }
+    .depth-players { display: flex; gap: 6px; flex-wrap: wrap; }
+    .depth-chip {
+      padding: 5px 12px; border-radius: 20px; font-size: 12px;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .depth-chip.first { border-color: var(--accent); color: var(--accent); }
+    .depth-chip.second { border-color: var(--accent4); color: var(--accent4); }
+
+    /* ===== CHAT ===== */
+    .chat-container { display: flex; flex-direction: column; height: calc(100vh - 210px); }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 8px 0; }
+    .chat-bubble {
+      max-width: 78%; padding: 9px 14px; border-radius: 16px;
+      margin-bottom: 6px; font-size: 14px; line-height: 1.5;
+    }
+    .chat-bubble.sent { background: var(--accent); color: #000; margin-left: auto; border-bottom-right-radius: 4px; }
+    .chat-bubble.received { background: var(--bg-surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+    .chat-sender { font-size: 11px; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
+    .chat-input-bar { display: flex; gap: 8px; padding: 10px 0; }
+    .chat-input-bar .input { flex: 1; }
+
+    /* ===== AUTH ===== */
+    .auth-screen {
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; padding: 20px;
+    }
+    .auth-logo {
+      font-family: 'Orbitron', sans-serif; font-size: 30px; font-weight: 900;
+      background: linear-gradient(135deg, var(--accent), var(--accent4));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 6px; letter-spacing: 3px;
+    }
+    .auth-tagline { color: var(--text-dim); font-size: 12px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 36px; }
+    .auth-card {
+      width: 100%; max-width: 400px; background: var(--bg-card);
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 28px;
+      box-shadow: var(--shadow);
+    }
+    .auth-toggle { text-align: center; margin-top: 18px; }
+    .auth-toggle a { color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 600; }
+
+    /* ===== INVITE CODE ===== */
+    .invite-code {
+      font-family: 'Orbitron', sans-serif; font-size: 26px; font-weight: 900;
+      color: var(--accent); text-align: center; padding: 18px;
+      background: var(--bg-surface); border: 2px dashed var(--border-solid);
+      border-radius: 12px; letter-spacing: 6px; margin: 12px 0;
+    }
+
+    /* ===== LOADING / SPINNER ===== */
+    .loading { text-align: center; padding: 40px; color: var(--text-dim); }
+    .spinner {
+      width: 38px; height: 38px; border: 3px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 14px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      padding: 11px 22px; border-radius: 10px; font-weight: 600; font-size: 13px;
+      z-index: 9999; animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s;
+      white-space: nowrap;
+    }
+    .toast.success { background: var(--accent); color: #000; }
+    .toast.error { background: var(--accent2); color: #fff; }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-16px); } }
+    @keyframes toastOut { to { opacity: 0; transform: translateX(-50%) translateY(-16px); } }
+
+    /* ===== SECTION TITLE ===== */
+    .section-title {
+      font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: 700;
+      color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase;
+      margin: 18px 0 10px;
+    }
+
+    /* ===== SHARE BUTTONS ===== */
+    .share-row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .share-btn {
+      flex: 1; padding: 8px 10px; border: none; border-radius: 8px;
+      font-family: 'Exo 2', sans-serif; font-weight: 700; font-size: 11px;
+      cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+      min-width: 80px;
+    }
+    .share-email { background: #2196f3; color: #fff; }
+    .share-whatsapp { background: #25d366; color: #fff; }
+
+    /* ===== RSVP BUTTONS ===== */
+    .rsvp-row { display: flex; gap: 6px; margin-top: 10px; }
+    .rsvp-btn {
+      flex: 1; padding: 7px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-surface); color: var(--text-dim);
+      font-family: 'Exo 2', sans-serif; font-size: 11px; font-weight: 600;
+      cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+    .rsvp-btn.active-going { background: var(--accent3); color: #000; border-color: var(--accent3); }
+    .rsvp-btn.active-absent { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+
+    /* ===== MISC ===== */
+    .empty-state { text-align: center; padding: 30px 20px; color: var(--text-dim); font-size: 14px; }
+    .divider { height: 1px; background: var(--border); margin: 12px 0; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .flex1 { flex: 1; }
+
+    @media (max-width: 400px) {
+      .media-grid { grid-template-columns: 1fr; }
+      .stat-row { flex-wrap: wrap; }
+      .stat-box { min-width: calc(50% - 5px); }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+  const { useState, useEffect, useRef, useCallback } = React;
+  const API = window.location.origin + '/api';
+
+  // ===== THEME =====
+  const getInitialTheme = () => localStorage.getItem('tm-theme') || 'dark';
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('tm-theme', t);
+  }
+  applyTheme(getInitialTheme());
+
+  // ===== API =====
+  const api = {
+    get: async (url) => {
+      const res = await fetch(API + url, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
+      return res.json();
+    },
+    post: async (url, body) => {
+      const res = await fetch(API + url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify(body)
+      });
+      return res.json();
+    },
+    put: async (url, body) => {
+      const res = await fetch(API + url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: JSON.stringify(body)
+      });
+      return res.json();
+    },
+    del: async (url) => {
+      const res = await fetch(API + url, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      return res.json();
+    },
+    upload: async (url, formData) => {
+      const res = await fetch(API + url, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+        body: formData
+      });
+      return res.json();
+    }
+  };
+
+  // ===== ICONS =====
+  const I = {
+    home:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10"/></svg>,
+    users:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>,
+    calendar: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+    training: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>,
+    chat:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>,
+    plus:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+    trash:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>,
+    sun:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
+    moon:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>,
+    settings: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>,
+    logout:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+    check:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>,
+    star:     <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+    clipboard:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>,
+    activity: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+    edit:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+  };
+
+  // ===== TOAST =====
+  function Toast({ msg, type = 'success', onDone }) {
+    useEffect(() => { const t = setTimeout(onDone, 3000); return () => clearTimeout(t); }, []);
+    return <div className={`toast ${type}`}>{msg}</div>;
+  }
+
+  // ===== SCORE RATING =====
+  const scoreColor = (s) => s >= 8 ? 'var(--accent3)' : s >= 5 ? 'var(--accent)' : 'var(--accent2)';
+  function ScoreRating({ value, onChange, label, readonly }) {
+    return (
+      <div className="score-group">
+        <div className="score-header">
+          <span className="score-label">{label}</span>
+          <span className="score-value" style={{color: scoreColor(value)}}>{value || '—'}</span>
+        </div>
+        <div className="score-bar">
+          {[1,2,3,4,5,6,7,8,9,10].map(n => (
+            <div key={n} className={`score-pip ${value >= n ? 'active' : ''}`}
+              style={value >= n ? {background: scoreColor(value)} : {}}
+              onClick={() => !readonly && onChange && onChange(n)}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const EVAL_CRITERIA = ['Speed / Athleticism', 'Strength / Power', 'Technique / Form', 'Football IQ', 'Effort / Attitude'];
+  const isCoach = (user) => ['coach','admin','director','team_manager','staff'].includes(user?.role);
+  const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  const fmtDateTime = (d) => new Date(d).toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+
+  // ===== AUTH SCREEN =====
+  function AuthScreen({ onLogin }) {
+    const [isLogin, setIsLogin] = useState(true);
+    const [form, setForm] = useState({ email:'', password:'', name:'', phone:'', role:'player' });
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async () => {
+      setError(''); setLoading(true);
+      try {
+        const data = await api.post(isLogin ? '/auth/login' : '/auth/register', form);
+        if (data.error) { setError(data.error); return; }
+        localStorage.setItem('token', data.token);
+        onLogin(data.user);
+      } catch { setError('Connection error.'); }
+      finally { setLoading(false); }
+    };
+
+    return (
+      <div className="auth-screen">
+        <div className="auth-logo">TEAM MATRIX</div>
+        <div className="auth-tagline">Team Command Center</div>
+        <div className="auth-card">
+          {error && <div style={{color:'var(--accent2)',fontSize:13,marginBottom:12,textAlign:'center'}}>{error}</div>}
+          {!isLogin && (<>
+            <div className="input-group"><label>Full Name</label>
+              <input className="input" placeholder="John Smith" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/>
+            </div>
+            <div className="input-group"><label>Phone</label>
+              <input className="input" placeholder="+1 555-1234" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})}/>
+            </div>
+            <div className="input-group"><label>Role</label>
+              <select className="input" value={form.role} onChange={e=>setForm({...form,role:e.target.value})}>
+                <option value="coach">Coach</option>
+                <option value="director">Director / Admin</option>
+                <option value="team_manager">Team Manager</option>
+                <option value="player">Player</option>
+                <option value="parent">Parent</option>
+                <option value="staff">Staff</option>
+              </select>
+            </div>
+          </>)}
+          <div className="input-group"><label>Email</label>
+            <input className="input" type="email" placeholder="you@team.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/>
+          </div>
+          <div className="input-group"><label>Password</label>
+            <input className="input" type="password" placeholder="••••••••" value={form.password} onChange={e=>setForm({...form,password:e.target.value})}
+              onKeyDown={e=>e.key==='Enter'&&handleSubmit()}/>
+          </div>
+          <button className="btn btn-primary btn-full" onClick={handleSubmit} disabled={loading}>
+            {loading ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}
+          </button>
+          <div className="auth-toggle">
+            <span style={{color:'var(--text-dim)',fontSize:13}}>{isLogin ? "No account? " : "Have an account? "}</span>
+            <a onClick={()=>{setIsLogin(!isLogin);setError('');}}>
+              {isLogin ? 'Sign Up' : 'Sign In'}
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== TEAM SETUP =====
+  function TeamSetup({ user, onTeamReady }) {
+    const [mode, setMode] = useState(null);
+    const [name, setName] = useState('');
+    const [sport, setSport] = useState('football');
+    const [level, setLevel] = useState('high_school');
+    const [code, setCode] = useState('');
+    const [err, setErr] = useState('');
+
+    const createTeam = async () => {
+      if (!name) return;
+      const team = await api.post('/teams/create', { name, sport, level });
+      if (team.error) { setErr(team.error); return; }
+      onTeamReady(team);
+    };
+    const joinTeam = async () => {
+      if (!code) return;
+      const team = await api.post('/teams/join', { inviteCode: code });
+      if (team.error) { setErr(team.error); return; }
+      onTeamReady(team);
+    };
+
+    return (
+      <div className="auth-screen">
+        <div className="auth-logo">TEAM MATRIX</div>
+        <div className="auth-tagline">Welcome, {user?.name?.split(' ')[0]}</div>
+        <div className="auth-card">
+          {err && <div style={{color:'var(--accent2)',fontSize:13,marginBottom:12,textAlign:'center'}}>{err}</div>}
+          {!mode && (<>
+            <button className="btn btn-primary btn-full" style={{marginBottom:10}} onClick={()=>setMode('create')}>Create a Team</button>
+            <button className="btn btn-outline btn-full" onClick={()=>setMode('join')}>Join with Invite Code</button>
+          </>)}
+          {mode==='create' && (<>
+            <div className="card-title">Create Your Team</div>
+            <div className="input-group"><label>Team Name</label>
+              <input className="input" placeholder="Las Vegas Vipers" value={name} onChange={e=>setName(e.target.value)}/>
+            </div>
+            <div className="input-group"><label>Sport</label>
+              <select className="input" value={sport} onChange={e=>setSport(e.target.value)}>
+                <option value="football">Football</option>
+                <option value="basketball">Basketball</option>
+                <option value="baseball">Baseball</option>
+                <option value="soccer">Soccer</option>
+                <option value="volleyball">Volleyball</option>
+                <option value="lacrosse">Lacrosse</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div className="input-group"><label>Level</label>
+              <select className="input" value={level} onChange={e=>setLevel(e.target.value)}>
+                <option value="youth">Youth</option>
+                <option value="middle_school">Middle School</option>
+                <option value="high_school">High School</option>
+                <option value="college">College</option>
+                <option value="adult">Adult / Rec</option>
+                <option value="pro">Pro</option>
+              </select>
+            </div>
+            <button className="btn btn-success btn-full" onClick={createTeam}>Create Team</button>
+            <div className="auth-toggle"><a onClick={()=>setMode(null)}>Back</a></div>
+          </>)}
+          {mode==='join' && (<>
+            <div className="card-title">Join a Team</div>
+            <div className="input-group"><label>Invite Code</label>
+              <input className="input" placeholder="ABC123" value={code}
+                onChange={e=>setCode(e.target.value.toUpperCase())}
+                style={{fontFamily:'Orbitron',fontSize:22,textAlign:'center',letterSpacing:4}}/>
+            </div>
+            <button className="btn btn-success btn-full" onClick={joinTeam}>Join Team</button>
+            <div className="auth-toggle"><a onClick={()=>setMode(null)}>Back</a></div>
+          </>)}
+        </div>
+      </div>
+    );
+  }
+
+  // ===== DASHBOARD =====
+  function Dashboard({ team, events, user, evaluations, practices, onNavigate }) {
+    const upcoming = events.filter(e => new Date(e.date) >= new Date()).slice(0, 4);
+    const avgScore = evaluations.length
+      ? (evaluations.reduce((s,e)=>s+(e.overallScore||0),0)/evaluations.length).toFixed(1) : '—';
+    const nextPractice = events.filter(e=>e.type==='practice'&&new Date(e.date)>=new Date())[0];
+
+    return (
+      <div className="page">
+        <div className="stat-row">
+          <div className="stat-box">
+            <div className="stat-number">{team?.players?.length||0}</div>
+            <div className="stat-label">Players</div>
+          </div>
+          <div className="stat-box">
+            <div className="stat-number">{events.filter(e=>new Date(e.date)>=new Date()).length}</div>
+            <div className="stat-label">Upcoming</div>
+          </div>
+          <div className="stat-box">
+            <div className="stat-number" style={{color:'var(--accent3)'}}>{avgScore}</div>
+            <div className="stat-label">Avg Eval</div>
+          </div>
+          <div className="stat-box">
+            <div className="stat-number" style={{color:'var(--accent4)'}}>{practices.length}</div>
+            <div className="stat-label">Practices</div>
+          </div>
+        </div>
+
+        {isCoach(user) && team && (
+          <div className="card">
+            <div className="card-title">Team Invite Code</div>
+            <div className="invite-code">{team.inviteCode}</div>
+            <p style={{textAlign:'center',fontSize:11,color:'var(--text-dim)'}}>Share with players & staff to join your team</p>
+          </div>
+        )}
+
+        {nextPractice && (
+          <div className="card" style={{borderColor:'rgba(0,230,118,0.3)'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div>
+                <div className="card-title" style={{color:'var(--accent3)',marginBottom:6}}>Next Practice</div>
+                <div style={{fontWeight:700,fontSize:15}}>{nextPractice.title}</div>
+                <div style={{fontSize:12,color:'var(--text-dim)',marginTop:4}}>{fmtDateTime(nextPractice.date)}</div>
+                {nextPractice.location && <div style={{fontSize:12,color:'var(--text-dim)'}}>{nextPractice.location}</div>}
+              </div>
+              <div style={{fontSize:32}}>🏃</div>
+            </div>
+          </div>
+        )}
+
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title" style={{marginBottom:0}}>Upcoming Events</div>
+            <button className="btn btn-outline btn-sm" onClick={()=>onNavigate('schedule')}>See All</button>
+          </div>
+          {upcoming.length === 0 && <div className="empty-state">No upcoming events scheduled</div>}
+          {upcoming.map((ev,i)=>(
+            <div key={i} className="player-row">
+              <div style={{flex:1}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                  <span className={`badge badge-${ev.type}`}>{ev.type}</span>
+                  {ev.homeAway && <span style={{fontSize:10,color:'var(--text-dim)'}}>{ev.homeAway.toUpperCase()}</span>}
+                </div>
+                <div className="player-name">{ev.title}</div>
+                <div className="player-meta">{fmtDateTime(ev.date)}</div>
+                {ev.location && <div className="player-meta">{ev.location}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {isCoach(user) && (
+          <div className="card">
+            <div className="card-title">Quick Actions</div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+              <button className="btn btn-outline" onClick={()=>onNavigate('schedule')}>+ New Event</button>
+              <button className="btn btn-outline" onClick={()=>onNavigate('training','evals')}>+ Evaluation</button>
+              <button className="btn btn-outline" onClick={()=>onNavigate('training','practice')}>+ Practice Plan</button>
+              <button className="btn btn-outline" onClick={()=>onNavigate('training','drills')}>+ Custom Drill</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ===== ROSTER =====
+  function Roster({ team, user, evaluations, onToast }) {
+    const [subTab, setSubTab] = useState('players');
+    const players = team?.players || [];
+    const coach = team?.coach;
+
+    const getPlayerAvgScore = (playerId) => {
+      const pe = evaluations.filter(e => e.player?._id === playerId || e.player === playerId);
+      if (!pe.length) return null;
+      const avg = pe.reduce((s,e)=>s+(e.overallScore||0),0)/pe.length;
+      return avg.toFixed(1);
+    };
+
+    return (
+      <div className="page">
+        <div className="sub-tabs">
+          {[['players','Players'],['depth','Depth Chart']].map(([id,label])=>(
+            <button key={id} className={`sub-tab ${subTab===id?'active':''}`} onClick={()=>setSubTab(id)}>{label}</button>
+          ))}
+        </div>
+
+        {subTab==='players' && (
+          <div className="card">
+            <div className="card-title">Roster ({players.length})</div>
+            {coach && (
+              <div className="player-row" style={{paddingBottom:12}}>
+                <div className="player-avatar" style={{background:'linear-gradient(135deg,#f59e0b,#ef4444)'}}>{coach.name?.[0]||'C'}</div>
+                <div className="player-info">
+                  <div className="player-name">{coach.name}</div>
+                  <div className="player-meta">Head Coach · {coach.email}</div>
+                </div>
+              </div>
+            )}
+            {players.map((p,i)=>{
+              const avg = getPlayerAvgScore(p._id);
+              return (
+                <div key={i} className="player-row">
+                  <div className="player-avatar">{p.number || p.name?.[0] || '?'}</div>
+                  <div className="player-info">
+                    <div className="player-name">#{p.number || '--'} {p.name}</div>
+                    <div className="player-meta">{p.position||'Position TBD'} · {p.role}</div>
+                    {p.email && <div className="player-meta">{p.email}</div>}
+                  </div>
+                  {avg && (
+                    <div style={{textAlign:'center',flexShrink:0}}>
+                      <div style={{fontFamily:'Orbitron',fontSize:14,fontWeight:900,color:scoreColor(parseFloat(avg))}}>{avg}</div>
+                      <div style={{fontSize:9,color:'var(--text-dim)',textTransform:'uppercase'}}>Rating</div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {players.length===0 && <div className="empty-state">No players yet. Share your invite code!</div>}
+          </div>
+        )}
+
+        {subTab==='depth' && <DepthChart team={team} user={user} onToast={onToast} />}
+      </div>
+    );
+  }
+
+  // ===== DEPTH CHART =====
+  const FOOTBALL_POSITIONS = ['QB','RB','FB','WR','TE','OL','DL','LB','CB','S','K','P','ST'];
+  function DepthChart({ team, user, onToast }) {
+    const [editing, setEditing] = useState(false);
+    const [chart, setChart] = useState(team?.depthChart || []);
+    const [formation, setFormation] = useState(team?.formation || '4-3');
+
+    const playerOptions = team?.players || [];
+    const getEntry = (pos) => chart.find(e=>e.position===pos) || { position: pos, players: [] };
+
+    const togglePlayer = (pos, playerId) => {
+      const newChart = [...chart];
+      const idx = newChart.findIndex(e=>e.position===pos);
+      if (idx >= 0) {
+        const players = newChart[idx].players.map(p=>p._id||p);
+        const pi = players.indexOf(playerId);
+        if (pi >= 0) { newChart[idx].players = newChart[idx].players.filter((_,i)=>i!==pi); }
+        else { newChart[idx].players.push(playerId); }
+      } else {
+        newChart.push({ position: pos, players: [playerId] });
+      }
+      setChart(newChart);
+    };
+
+    const saveChart = async () => {
+      const cleanChart = chart.map(e=>({ position: e.position, players: e.players.map(p=>p._id||p) }));
+      const res = await api.put(`/teams/${team._id}/depth-chart`, { depthChart: cleanChart, formation });
+      if (res.error) { onToast(res.error,'error'); return; }
+      setEditing(false);
+      onToast('Depth chart saved');
+    };
+
+    if (editing) {
+      return (
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title" style={{marginBottom:0}}>Edit Depth Chart</div>
+            <div style={{display:'flex',gap:6}}>
+              <button className="btn btn-success btn-sm" onClick={saveChart}>Save</button>
+              <button className="btn btn-outline btn-sm" onClick={()=>setEditing(false)}>Cancel</button>
+            </div>
+          </div>
+          <div className="input-group"><label>Formation</label>
+            <select className="input" value={formation} onChange={e=>setFormation(e.target.value)}>
+              {['4-3','3-4','4-2-5','5-2','Spread','Air Raid','Wing-T','Single Wing'].map(f=>(
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+          </div>
+          {FOOTBALL_POSITIONS.map(pos=>{
+            const entry = getEntry(pos);
+            const assigned = entry.players.map(p=>p._id||p);
+            return (
+              <div key={pos} className="depth-position">
+                <div className="depth-pos-name">{pos}</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                  {playerOptions.map(p=>{
+                    const pid = p._id;
+                    const on = assigned.includes(pid);
+                    return (
+                      <button key={pid}
+                        style={{padding:'4px 10px',borderRadius:20,fontSize:11,
+                          background:on?'var(--accent)':'var(--bg-surface)',
+                          color:on?'#000':'var(--text-dim)',
+                          border:`1px solid ${on?'var(--accent)':'var(--border)'}`,
+                          cursor:'pointer'}}
+                        onClick={()=>togglePlayer(pos,pid)}
+                      >#{p.number||'?'} {p.name?.split(' ')[0]||'Player'}</button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    return (
+      <div className="card">
+        <div className="card-header">
+          <div>
+            <div className="card-title" style={{marginBottom:2}}>Depth Chart</div>
+            <div style={{fontSize:12,color:'var(--text-dim)'}}>Formation: {formation}</div>
+          </div>
+          {isCoach(user) && <button className="btn btn-outline btn-sm" onClick={()=>setEditing(true)}>Edit</button>}
+        </div>
+        {chart.filter(e=>e.players?.length>0).length===0 && (
+          <div className="empty-state">{isCoach(user) ? 'Click Edit to set up your depth chart' : 'Depth chart not set up yet'}</div>
+        )}
+        {FOOTBALL_POSITIONS.map(pos=>{
+          const entry = getEntry(pos);
+          if (!entry.players?.length) return null;
+          return (
+            <div key={pos} className="depth-position">
+              <div className="depth-pos-name">{pos}</div>
+              <div className="depth-players">
+                {entry.players.map((p,i)=>{
+                  const name = p.name || playerOptions.find(pl=>pl._id===(p._id||p))?.name || 'Player';
+                  const num = p.number || playerOptions.find(pl=>pl._id===(p._id||p))?.number;
+                  return (
+                    <span key={i} className={`depth-chip ${i===0?'first':i===1?'second':''}`}>
+                      {i+1}. {num?`#${num} `:''}  {name}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ===== SCHEDULE =====
+  function Schedule({ team, events, user, refreshEvents, onToast }) {
+    const [showForm, setShowForm] = useState(false);
+    const [form, setForm] = useState({ title:'', type:'practice', date:'', location:'', notes:'', opponent:'', homeAway:'' });
+    const [filter, setFilter] = useState('upcoming');
+
+    const createEvent = async () => {
+      if (!form.title||!form.date) { onToast('Title and date required','error'); return; }
+      const res = await api.post(`/schedule/${team._id}`, form);
+      if (res.error) { onToast(res.error,'error'); return; }
+      setForm({title:'',type:'practice',date:'',location:'',notes:'',opponent:'',homeAway:''});
+      setShowForm(false);
+      await refreshEvents();
+      onToast('Event created!');
+    };
+
+    const rsvp = async (eventId, status) => {
+      await api.put(`/schedule/${eventId}/rsvp`, { status });
+      await refreshEvents();
+      onToast(`RSVP: ${status}`);
+    };
+
+    const deleteEvent = async (eventId) => {
+      await api.del(`/schedule/${eventId}`);
+      await refreshEvents();
+      onToast('Event deleted');
+    };
+
+    const now = new Date();
+    const filtered = filter==='upcoming'
+      ? events.filter(e=>new Date(e.date)>=now)
+      : filter==='past'
+        ? events.filter(e=>new Date(e.date)<now).reverse()
+        : events;
+
+    const myRsvp = (ev) => ev.attendees?.find(a=>a.player?._id===user?._id||a.player===user?._id)?.status || 'pending';
+
+    return (
+      <div className="page">
+        {isCoach(user) && (
+          <button className="btn btn-primary btn-full" style={{marginBottom:12}} onClick={()=>setShowForm(!showForm)}>
+            {showForm ? 'Cancel' : '+ New Event'}
+          </button>
+        )}
+
+        {showForm && (
+          <div className="card">
+            <div className="card-title">Create Event</div>
+            <div className="input-group"><label>Title</label>
+              <input className="input" placeholder="Game vs Panthers" value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <div className="input-group"><label>Type</label>
+                <select className="input" value={form.type} onChange={e=>setForm({...form,type:e.target.value})}>
+                  <option value="practice">Practice</option>
+                  <option value="game">Game</option>
+                  <option value="travel">Travel</option>
+                  <option value="meeting">Meeting</option>
+                  <option value="tryout">Tryout</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              {form.type==='game' && (
+                <div className="input-group"><label>Home/Away</label>
+                  <select className="input" value={form.homeAway} onChange={e=>setForm({...form,homeAway:e.target.value})}>
+                    <option value="">—</option>
+                    <option value="home">Home</option>
+                    <option value="away">Away</option>
+                    <option value="neutral">Neutral</option>
+                  </select>
+                </div>
+              )}
+            </div>
+            {form.type==='game' && (
+              <div className="input-group"><label>Opponent</label>
+                <input className="input" placeholder="Panthers" value={form.opponent} onChange={e=>setForm({...form,opponent:e.target.value})}/>
+              </div>
+            )}
+            <div className="input-group"><label>Date & Time</label>
+              <input className="input" type="datetime-local" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/>
+            </div>
+            <div className="input-group"><label>Location</label>
+              <input className="input" placeholder="Home Field" value={form.location} onChange={e=>setForm({...form,location:e.target.value})}/>
+            </div>
+            <div className="input-group"><label>Notes</label>
+              <textarea className="input" placeholder="Bring pads, arrive 30 min early..." value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/>
+            </div>
+            <button className="btn btn-success btn-full" onClick={createEvent}>Create Event</button>
+          </div>
+        )}
+
+        <div className="sub-tabs" style={{paddingTop:0,marginBottom:8}}>
+          {[['upcoming','Upcoming'],['past','Past'],['all','All']].map(([id,label])=>(
+            <button key={id} className={`sub-tab ${filter===id?'active':''}`} onClick={()=>setFilter(id)}>{label}</button>
+          ))}
+        </div>
+
+        {filtered.map((ev,i)=>{
+          const status = myRsvp(ev);
+          const going = ev.attendees?.filter(a=>a.status==='attending').length || 0;
+          const absent = ev.attendees?.filter(a=>a.status==='absent').length || 0;
+          return (
+            <div key={i} className="card">
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+                <div style={{flex:1}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                    <span className={`badge badge-${ev.type}`}>{ev.type}</span>
+                    {ev.homeAway && <span style={{fontSize:10,color:'var(--text-dim)',textTransform:'uppercase'}}>{ev.homeAway}</span>}
+                  </div>
+                  <div className="player-name">{ev.title}</div>
+                  {ev.opponent && <div style={{fontSize:12,color:'var(--text-dim)',marginTop:2}}>vs {ev.opponent}</div>}
+                  <div className="player-meta" style={{marginTop:4}}>{fmtDateTime(ev.date)}</div>
+                  {ev.location && <div className="player-meta">{ev.location}</div>}
+                  {ev.notes && <div style={{fontSize:12,color:'var(--text-dim)',marginTop:6,lineHeight:1.5}}>{ev.notes}</div>}
+                </div>
+                {isCoach(user) && (
+                  <button className="btn btn-icon btn-danger" style={{padding:'6px',width:30,height:30}}
+                    onClick={()=>deleteEvent(ev._id)}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{width:14,height:14,strokeWidth:2}}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                  </button>
+                )}
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:10,fontSize:11,color:'var(--text-dim)'}}>
+                <span>✅ {going} going · ❌ {absent} absent</span>
+              </div>
+              {!isCoach(user) && new Date(ev.date)>=new Date() && (
+                <div className="rsvp-row">
+                  <button className={`rsvp-btn ${status==='attending'?'active-going':''}`} onClick={()=>rsvp(ev._id,'attending')}>✅ Going</button>
+                  <button className={`rsvp-btn ${status==='absent'?'active-absent':''}`} onClick={()=>rsvp(ev._id,'absent')}>❌ Can't Go</button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {filtered.length===0 && <div className="empty-state">No events in this view</div>}
+      </div>
+    );
+  }
+
+  // ===== PLAYBOOKS =====
+  function Playbooks({ team, refreshTeam, onToast }) {
+    const [showUpload, setShowUpload] = useState(false);
+    const [title, setTitle] = useState('');
+    const [desc, setDesc] = useState('');
+    const fileRef = useRef();
+
+    const handleUpload = async () => {
+      const file = fileRef.current?.files[0];
+      if (!file||!title) { onToast('Title and file required','error'); return; }
+      const fd = new FormData();
+      fd.append('file',file); fd.append('title',title); fd.append('description',desc);
+      const res = await api.upload(`/media/${team._id}/upload`, fd);
+      if (res.error) { onToast(res.error,'error'); return; }
+      setTitle(''); setDesc(''); setShowUpload(false);
+      await refreshTeam();
+      onToast('Playbook uploaded!');
+    };
+
+    const distribute = async (pb) => {
+      const res = await api.post(`/media/${team._id}/distribute`, {
+        subject:`New Playbook: ${pb.title}`,
+        message:`Coach shared a new playbook: ${pb.title}. ${pb.description||''}`,
+        fileUrl: pb.fileUrl
+      });
+      onToast(res.error || `Sent to ${res.recipients?.length||0} members`);
+    };
+
+    const shareWhatsApp = async (pb) => {
+      const d = await api.post(`/media/${team._id}/whatsapp`, { message:`New from the team: ${pb.title}`, fileUrl: pb.fileUrl });
+      window.open(d.whatsappUrl,'_blank');
+    };
+
+    const deletePlaybook = async (pbId) => {
+      await api.del(`/media/${team._id}/playbooks/${pbId}`);
+      await refreshTeam();
+      onToast('Playbook deleted');
+    };
+
+    const playbooks = team?.playbooks || [];
+
+    return (
+      <div>
+        <button className="btn btn-primary btn-full" style={{marginBottom:12}} onClick={()=>setShowUpload(!showUpload)}>
+          {showUpload ? 'Cancel' : '+ Upload Playbook / Video'}
+        </button>
+        {showUpload && (
+          <div className="card">
+            <div className="card-title">Upload Content</div>
+            <div className="input-group"><label>Title</label>
+              <input className="input" placeholder="Week 3 Playbook" value={title} onChange={e=>setTitle(e.target.value)}/>
+            </div>
+            <div className="input-group"><label>Description</label>
+              <textarea className="input" placeholder="Notes about this content..." value={desc} onChange={e=>setDesc(e.target.value)}/>
+            </div>
+            <div className="input-group"><label>File (Video, PDF, Image)</label>
+              <input className="input" type="file" ref={fileRef} accept="video/*,application/pdf,image/*"/>
+            </div>
+            <button className="btn btn-success btn-full" onClick={handleUpload}>Upload</button>
+          </div>
+        )}
+        <div className="media-grid">
+          {playbooks.map((pb,i)=>(
+            <div key={i} className="media-card">
+              <div className="media-icon">{pb.fileType==='video'?'🎬':pb.fileType==='pdf'?'📄':'🖼️'}</div>
+              <div className="media-title">{pb.title}</div>
+              <div className="media-type">{pb.fileType}</div>
+              <div className="share-row" style={{flexDirection:'column',gap:5,marginTop:8}}>
+                <a href={pb.fileUrl} target="_blank" className="share-btn" style={{background:'var(--accent)',color:'#000',textDecoration:'none',textAlign:'center',padding:'7px 10px',borderRadius:8,fontWeight:700,fontSize:11}}>View</a>
+                <button className="share-btn share-email" onClick={()=>distribute(pb)}>📧 Email</button>
+                <button className="share-btn share-whatsapp" onClick={()=>shareWhatsApp(pb)}>💬 WhatsApp</button>
+                <button className="share-btn" style={{background:'var(--accent2)',color:'#fff'}} onClick={()=>deletePlaybook(pb._id)}>Delete</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        {playbooks.length===0&&!showUpload&&<div className="empty-state">No playbooks uploaded yet</div>}
+      </div>
+    );
+  }
+
+  // ===== DRILL LIBRARY =====
+  function DrillLibrary({ team, user, onToast, onAddToPractice }) {
+    const [drills, setDrills] = useState([]);
+    const [catFilter, setCatFilter] = useState('all');
+    const [showForm, setShowForm] = useState(false);
+    const [form, setForm] = useState({ name:'', category:'offense', duration:10, description:'', playerCount:'', equipment:'' });
+
+    useEffect(()=>{ loadDrills(); }, []);
+
+    const loadDrills = async () => {
+      const d = await api.get(`/drills/${team._id}`);
+      if (!d.error) setDrills(d);
+    };
+
+    const createDrill = async () => {
+      if (!form.name) { onToast('Drill name required','error'); return; }
+      const res = await api.post(`/drills/${team._id}`, {
+        ...form, duration: parseInt(form.duration)||10,
+        equipment: form.equipment ? form.equipment.split(',').map(e=>e.trim()) : []
+      });
+      if (res.error) { onToast(res.error,'error'); return; }
+      setForm({ name:'',category:'offense',duration:10,description:'',playerCount:'',equipment:'' });
+      setShowForm(false);
+      await loadDrills();
+      onToast('Drill added!');
+    };
+
+    const deleteDrill = async (id) => {
+      await api.del(`/drills/${id}`);
+      await loadDrills();
+      onToast('Drill deleted');
+    };
+
+    const cats = ['all','offense','defense','special_teams','conditioning','skills'];
+    const filtered = catFilter==='all' ? drills : drills.filter(d=>d.category===catFilter);
+
+    return (
+      <div>
+        {isCoach(user) && (
+          <button className="btn btn-primary btn-full" style={{marginBottom:12}} onClick={()=>setShowForm(!showForm)}>
+            {showForm ? 'Cancel' : '+ Add Custom Drill'}
+          </button>
+        )}
+        {showForm && (
+          <div className="card">
+            <div className="card-title">New Drill</div>
+            <div className="input-group"><label>Name</label>
+              <input className="input" placeholder="Cone Weave Drill" value={form.name} onChange={e=>setForm({...form,name:e.target.value})}/>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <div className="input-group"><label>Category</label>
+                <select className="input" value={form.category} onChange={e=>setForm({...form,category:e.target.value})}>
+                  <option value="offense">Offense</option>
+                  <option value="defense">Defense</option>
+                  <option value="special_teams">Special Teams</option>
+                  <option value="conditioning">Conditioning</option>
+                  <option value="skills">Skills</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div className="input-group"><label>Duration (min)</label>
+                <input className="input" type="number" value={form.duration} onChange={e=>setForm({...form,duration:e.target.value})}/>
+              </div>
+            </div>
+            <div className="input-group"><label>Description</label>
+              <textarea className="input" placeholder="Drill instructions..." value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <div className="input-group"><label>Player Count</label>
+                <input className="input" placeholder="4-8 players" value={form.playerCount} onChange={e=>setForm({...form,playerCount:e.target.value})}/>
+              </div>
+              <div className="input-group"><label>Equipment (comma sep.)</label>
+                <input className="input" placeholder="Cones, Pads" value={form.equipment} onChange={e=>setForm({...form,equipment:e.target.value})}/>
+              </div>
+            </div>
+            <button className="btn btn-success btn-full" onClick={createDrill}>Save Drill</button>
+          </div>
+        )}
+
+        <div className="sub-tabs" style={{paddingTop:0}}>
+          {cats.map(c=>(
+            <button key={c} className={`sub-tab ${catFilter===c?'active':''}`} onClick={()=>setCatFilter(c)}>
+              {c==='all'?'All':c.replace('_',' ')}
+            </button>
+          ))}
+        </div>
+
+        {filtered.map((d,i)=>(
+          <div key={i} className="drill-card">
+            <div className="drill-header">
+              <div>
+                <div className="drill-name">{d.name}</div>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginTop:4}}>
+                  <span className={`badge badge-${d.category}`}>{d.category.replace('_',' ')}</span>
+                  <span style={{fontSize:11,color:'var(--text-dim)'}}>⏱ {d.duration} min</span>
+                  {d.playerCount && <span style={{fontSize:11,color:'var(--text-dim)'}}>👥 {d.playerCount}</span>}
+                  {d.isDefault && <span style={{fontSize:10,color:'var(--accent4)',fontWeight:700}}>DEFAULT</span>}
+                </div>
+              </div>
+            </div>
+            {d.description && <div className="drill-desc">{d.description}</div>}
+            {d.equipment?.length > 0 && <div style={{fontSize:11,color:'var(--text-dim)',marginTop:6}}>🎒 {d.equipment.join(', ')}</div>}
+            <div className="drill-actions">
+              {onAddToPractice && (
+                <button className="btn btn-outline btn-sm" onClick={()=>onAddToPractice(d)}>+ Add to Practice</button>
+              )}
+              {isCoach(user) && !d.isDefault && (
+                <button className="btn btn-danger btn-sm" onClick={()=>deleteDrill(d._id)}>Delete</button>
+              )}
+            </div>
+          </div>
+        ))}
+        {filtered.length===0 && <div className="empty-state">No drills in this category</div>}
+      </div>
+    );
+  }
+
+  // ===== PRACTICE PLANS =====
+  function PracticePlans({ team, user, onToast }) {
+    const [practices, setPractices] = useState([]);
+    const [view, setView] = useState('list'); // list | create | detail
+    const [selected, setSelected] = useState(null);
+    const [form, setForm] = useState({ title:'', date:'', goals:'', notes:'' });
+    const [planDrills, setPlanDrills] = useState([]);
+    const [showDrillPicker, setShowDrillPicker] = useState(false);
+    const [allDrills, setAllDrills] = useState([]);
+
+    useEffect(()=>{ loadPractices(); }, []);
+
+    const loadPractices = async () => {
+      const p = await api.get(`/practices/${team._id}`);
+      if (!p.error) setPractices(p);
+    };
+
+    const loadDrills = async () => {
+      const d = await api.get(`/drills/${team._id}`);
+      if (!d.error) setAllDrills(d);
+    };
+
+    const openCreate = () => {
+      setForm({ title:'', date:'', goals:'', notes:'' });
+      setPlanDrills([]);
+      setView('create');
+      loadDrills();
+    };
+
+    const addDrill = (drill) => {
+      setPlanDrills(prev=>[...prev, {drillId:drill._id, name:drill.name, duration:drill.duration, order:prev.length, notes:''}]);
+      setShowDrillPicker(false);
+    };
+
+    const removeDrill = (idx) => setPlanDrills(prev=>prev.filter((_,i)=>i!==idx));
+
+    const savePlan = async () => {
+      if (!form.title) { onToast('Plan title required','error'); return; }
+      const goals = form.goals ? form.goals.split('\n').filter(Boolean) : [];
+      const drills = planDrills.map((d,i)=>({...d, order:i}));
+      const res = await api.post(`/practices/${team._id}`, { ...form, goals, drills });
+      if (res.error) { onToast(res.error,'error'); return; }
+      await loadPractices();
+      setView('list');
+      onToast('Practice plan saved!');
+    };
+
+    const deletePlan = async (id) => {
+      await api.del(`/practices/${id}`);
+      await loadPractices();
+      onToast('Practice plan deleted');
+    };
+
+    const totalTime = planDrills.reduce((s,d)=>s+(parseInt(d.duration)||0), 0);
+
+    if (view==='create') return (
+      <div>
+        <div style={{display:'flex',gap:8,marginBottom:12}}>
+          <button className="btn btn-outline btn-sm" onClick={()=>setView('list')}>← Back</button>
+          <button className="btn btn-success btn-sm flex1" style={{flex:1,justifyContent:'center'}} onClick={savePlan}>Save Plan</button>
+        </div>
+        <div className="card">
+          <div className="card-title">New Practice Plan</div>
+          <div className="input-group"><label>Title</label>
+            <input className="input" placeholder="Week 4 Offense Focus" value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/>
+          </div>
+          <div className="input-group"><label>Date & Time</label>
+            <input className="input" type="datetime-local" value={form.date} onChange={e=>setForm({...form,date:e.target.value})}/>
+          </div>
+          <div className="input-group"><label>Session Goals (one per line)</label>
+            <textarea className="input" placeholder={"Improve red zone efficiency\nWork on 3rd down conversions"} value={form.goals} onChange={e=>setForm({...form,goals:e.target.value})}/>
+          </div>
+          <div className="input-group"><label>Notes</label>
+            <textarea className="input" placeholder="Additional notes..." value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header">
+            <div>
+              <div className="card-title" style={{marginBottom:2}}>Drills</div>
+              <div style={{fontSize:11,color:'var(--text-dim)'}}>Total: {totalTime} min</div>
+            </div>
+            <button className="btn btn-outline btn-sm" onClick={()=>{setShowDrillPicker(true); loadDrills();}}>+ Add Drill</button>
+          </div>
+          {planDrills.length===0 && <div className="empty-state">Add drills to build your session</div>}
+          {planDrills.map((d,i)=>(
+            <div key={i} className="drill-item">
+              <div className="drill-order">{i+1}</div>
+              <div style={{flex:1}}>
+                <div className="drill-item-name">{d.name}</div>
+                <div style={{fontSize:11,color:'var(--text-dim)'}}>{d.duration} min</div>
+              </div>
+              <button style={{background:'none',border:'none',color:'var(--accent2)',cursor:'pointer',padding:'4px'}}
+                onClick={()=>removeDrill(i)}>✕</button>
+            </div>
+          ))}
+        </div>
+
+        {showDrillPicker && (
+          <div className="card" style={{borderColor:'var(--accent)'}}>
+            <div className="card-header">
+              <div className="card-title" style={{marginBottom:0}}>Pick a Drill</div>
+              <button className="btn btn-outline btn-sm" onClick={()=>setShowDrillPicker(false)}>Close</button>
+            </div>
+            {allDrills.map((d,i)=>(
+              <div key={i} className="drill-item" style={{cursor:'pointer'}} onClick={()=>addDrill(d)}>
+                <div style={{flex:1}}>
+                  <div className="drill-item-name">{d.name}</div>
+                  <div style={{display:'flex',gap:8,marginTop:2}}>
+                    <span className={`badge badge-${d.category}`} style={{fontSize:9}}>{d.category.replace('_',' ')}</span>
+                    <span style={{fontSize:11,color:'var(--text-dim)'}}>{d.duration} min</span>
+                  </div>
+                </div>
+                <span style={{color:'var(--accent)',fontSize:20,lineHeight:1}}>+</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+
+    if (view==='detail' && selected) return (
+      <div>
+        <button className="btn btn-outline btn-sm" style={{marginBottom:12}} onClick={()=>setView('list')}>← Back</button>
+        <div className="card">
+          <div className="card-header">
+            <div>
+              <div className="card-title" style={{marginBottom:2}}>{selected.title}</div>
+              <div className="practice-meta">
+                {selected.date && <span>📅 {fmtDateTime(selected.date)}</span>}
+                <span>⏱ {selected.totalDuration} min total</span>
+                <span>🏃 {selected.drills?.length||0} drills</span>
+              </div>
+            </div>
+          </div>
+          {selected.goals?.length > 0 && (
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1.5,marginBottom:8}}>Session Goals</div>
+              {selected.goals.map((g,i)=>(
+                <div key={i} style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                  <span style={{color:'var(--accent3)'}}>✓</span>
+                  <span style={{fontSize:13}}>{g}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="divider"/>
+          <div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1.5,marginBottom:8,marginTop:4}}>Drill Schedule</div>
+          {selected.drills?.map((d,i)=>(
+            <div key={i} className="drill-item">
+              <div className="drill-order">{i+1}</div>
+              <div style={{flex:1}}>
+                <div className="drill-item-name">{d.name || d.drillId?.name}</div>
+                {d.notes && <div style={{fontSize:11,color:'var(--text-dim)'}}>{d.notes}</div>}
+              </div>
+              <div className="drill-item-dur">{d.duration} min</div>
+            </div>
+          ))}
+          {selected.notes && (
+            <div style={{marginTop:14,padding:12,background:'var(--bg-deep)',borderRadius:10,fontSize:13,color:'var(--text-dim)',lineHeight:1.6}}>
+              {selected.notes}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+
+    return (
+      <div>
+        {isCoach(user) && (
+          <button className="btn btn-primary btn-full" style={{marginBottom:12}} onClick={openCreate}>+ New Practice Plan</button>
+        )}
+        {practices.map((p,i)=>(
+          <div key={i} className="practice-card" onClick={()=>{setSelected(p);setView('detail');}}>
+            <div className="practice-title">{p.title}</div>
+            <div className="practice-meta">
+              {p.date && <span>📅 {fmtDate(p.date)}</span>}
+              <span>⏱ {p.totalDuration} min</span>
+              <span>🏃 {p.drills?.length||0} drills</span>
+            </div>
+            {p.goals?.length > 0 && (
+              <div style={{marginTop:8,fontSize:12,color:'var(--text-dim)'}}>
+                {p.goals.slice(0,2).map((g,j)=><div key={j}>• {g}</div>)}
+                {p.goals.length>2 && <div>+{p.goals.length-2} more goals</div>}
+              </div>
+            )}
+            {isCoach(user) && (
+              <div style={{display:'flex',justifyContent:'flex-end',marginTop:10}}>
+                <button className="btn btn-danger btn-sm"
+                  onClick={e=>{e.stopPropagation();deletePlan(p._id);}}>Delete</button>
+              </div>
+            )}
+          </div>
+        ))}
+        {practices.length===0 && <div className="empty-state">No practice plans yet{isCoach(user)?' — create one above':''}</div>}
+      </div>
+    );
+  }
+
+  // ===== EVALUATIONS =====
+  function Evaluations({ team, user, evaluations, setEvaluations, onToast }) {
+    const [showForm, setShowForm] = useState(false);
+    const [selectedPlayer, setSelectedPlayer] = useState('');
+    const [scores, setScores] = useState(EVAL_CRITERIA.reduce((acc,c)=>({...acc,[c]:5}),{}));
+    const [notes, setNotes] = useState('');
+    const [season, setSeason] = useState('');
+    const [filterPlayer, setFilterPlayer] = useState('all');
+
+    const loadEvals = async () => {
+      const e = await api.get(`/evaluations/${team._id}`);
+      if (!e.error) setEvaluations(e);
+    };
+
+    const submitEval = async () => {
+      if (!selectedPlayer) { onToast('Select a player','error'); return; }
+      const criteria = EVAL_CRITERIA.map(name => ({ name, score: scores[name] }));
+      const res = await api.post(`/evaluations/${team._id}`, { player: selectedPlayer, criteria, notes, season });
+      if (res.error) { onToast(res.error,'error'); return; }
+      await loadEvals();
+      setShowForm(false);
+      setNotes(''); setSeason('');
+      setScores(EVAL_CRITERIA.reduce((acc,c)=>({...acc,[c]:5}),{}));
+      onToast('Evaluation saved!');
+    };
+
+    const deleteEval = async (id) => {
+      await api.del(`/evaluations/${id}`);
+      await loadEvals();
+      onToast('Evaluation deleted');
+    };
+
+    const players = team?.players || [];
+    const filtered = filterPlayer==='all' ? evaluations : evaluations.filter(e=>(e.player?._id||e.player)===filterPlayer);
+
+    // Per-player stats
+    const playerStats = players.map(p=>{
+      const pe = evaluations.filter(e=>(e.player?._id||e.player)===p._id);
+      const avg = pe.length ? (pe.reduce((s,e)=>s+(e.overallScore||0),0)/pe.length).toFixed(1) : null;
+      return { ...p, evalCount: pe.length, avgScore: avg };
+    }).filter(p=>p.evalCount>0).sort((a,b)=>(b.avgScore||0)-(a.avgScore||0));
+
+    return (
+      <div>
+        {isCoach(user) && (
+          <button className="btn btn-primary btn-full" style={{marginBottom:12}} onClick={()=>setShowForm(!showForm)}>
+            {showForm ? 'Cancel' : '+ New Evaluation'}
+          </button>
+        )}
+
+        {showForm && (
+          <div className="card">
+            <div className="card-title">Player Evaluation</div>
+            <div className="input-group"><label>Player</label>
+              <select className="input" value={selectedPlayer} onChange={e=>setSelectedPlayer(e.target.value)}>
+                <option value="">— Select Player —</option>
+                {players.map(p=>(
+                  <option key={p._id} value={p._id}>#{p.number||'?'} {p.name} {p.position?`(${p.position})`:''}</option>
+                ))}
+              </select>
+            </div>
+            <div className="input-group"><label>Season</label>
+              <input className="input" placeholder="2024-25" value={season} onChange={e=>setSeason(e.target.value)}/>
+            </div>
+            <div className="divider"/>
+            {EVAL_CRITERIA.map(c=>(
+              <ScoreRating key={c} label={c} value={scores[c]} onChange={v=>setScores({...scores,[c]:v})}/>
+            ))}
+            <div className="divider"/>
+            <div style={{textAlign:'center',marginBottom:12}}>
+              <div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>Overall Score</div>
+              <div style={{fontFamily:'Orbitron',fontSize:32,fontWeight:900,color:scoreColor(
+                Math.round(Object.values(scores).reduce((s,v)=>s+v,0)/EVAL_CRITERIA.length*10)/10
+              )}}>
+                {(Object.values(scores).reduce((s,v)=>s+v,0)/EVAL_CRITERIA.length).toFixed(1)}
+              </div>
+            </div>
+            <div className="input-group"><label>Coach Notes</label>
+              <textarea className="input" placeholder="Strong week — improved footwork and route running..." value={notes} onChange={e=>setNotes(e.target.value)}/>
+            </div>
+            <button className="btn btn-success btn-full" onClick={submitEval}>Save Evaluation</button>
+          </div>
+        )}
+
+        {playerStats.length>0 && (
+          <div className="card">
+            <div className="card-title">Player Rankings</div>
+            {playerStats.map((p,i)=>(
+              <div key={i} className="player-row">
+                <div style={{fontFamily:'Orbitron',fontSize:12,color:'var(--text-dim)',width:22}}>#{i+1}</div>
+                <div className="player-avatar">{p.number||p.name?.[0]||'?'}</div>
+                <div className="player-info">
+                  <div className="player-name">{p.name}</div>
+                  <div className="player-meta">{p.position||'—'} · {p.evalCount} eval{p.evalCount>1?'s':''}</div>
+                </div>
+                <div style={{textAlign:'right',flexShrink:0}}>
+                  <div style={{fontFamily:'Orbitron',fontSize:18,fontWeight:900,color:scoreColor(parseFloat(p.avgScore))}}>{p.avgScore}</div>
+                  <div style={{fontSize:9,color:'var(--text-dim)',textTransform:'uppercase'}}>avg</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{marginBottom:12}}>
+          <select className="input" value={filterPlayer} onChange={e=>setFilterPlayer(e.target.value)}>
+            <option value="all">All Players</option>
+            {players.map(p=><option key={p._id} value={p._id}>#{p.number||'?'} {p.name}</option>)}
+          </select>
+        </div>
+
+        {filtered.map((ev,i)=>(
+          <div key={i} className="eval-card">
+            <div className="eval-header">
+              <div>
+                <div className="eval-player">{ev.player?.name||'Unknown Player'}</div>
+                <div style={{fontSize:11,color:'var(--text-dim)'}}>{ev.player?.position||'—'} · by {ev.evaluatedBy?.name||'Coach'}</div>
+                {ev.season && <div style={{fontSize:10,color:'var(--accent4)'}}>{ev.season}</div>}
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontFamily:'Orbitron',fontSize:20,fontWeight:900,color:scoreColor(ev.overallScore||0)}}>{ev.overallScore||'—'}</div>
+                <div className="eval-date">{fmtDate(ev.createdAt)}</div>
+              </div>
+            </div>
+            {ev.criteria?.map((c,j)=>(
+              <div key={j} className="eval-criteria-row">
+                <span style={{color:'var(--text-dim)'}}>{c.name}</span>
+                <span style={{fontWeight:700,color:scoreColor(c.score)}}>{c.score}/10</span>
+              </div>
+            ))}
+            {ev.notes && <div style={{marginTop:8,fontSize:12,color:'var(--text-dim)',lineHeight:1.5,fontStyle:'italic'}}>"{ev.notes}"</div>}
+            {isCoach(user) && (
+              <button className="btn btn-danger btn-sm" style={{marginTop:10}} onClick={()=>deleteEval(ev._id)}>Delete</button>
+            )}
+          </div>
+        ))}
+        {filtered.length===0 && <div className="empty-state">No evaluations yet{isCoach(user)?' — add one above':''}</div>}
+      </div>
+    );
+  }
+
+  // ===== TRAINING HUB =====
+  function Training({ team, user, evaluations, setEvaluations, refreshTeam, onToast, initTab }) {
+    const [tab, setTab] = useState(initTab||'playbooks');
+
+    return (
+      <div className="page">
+        <div className="sub-tabs">
+          {[['playbooks','Playbooks'],['drills','Drills'],['practice','Practice'],['evals','Evaluations']].map(([id,label])=>(
+            <button key={id} className={`sub-tab ${tab===id?'active':''}`} onClick={()=>setTab(id)}>{label}</button>
+          ))}
+        </div>
+        {tab==='playbooks' && <Playbooks team={team} user={user} refreshTeam={refreshTeam} onToast={onToast}/>}
+        {tab==='drills' && <DrillLibrary team={team} user={user} onToast={onToast}/>}
+        {tab==='practice' && <PracticePlans team={team} user={user} onToast={onToast}/>}
+        {tab==='evals' && <Evaluations team={team} user={user} evaluations={evaluations} setEvaluations={setEvaluations} onToast={onToast}/>}
+      </div>
+    );
+  }
+
+  // ===== CHAT =====
+  function Chat({ team, user }) {
+    const [messages, setMessages] = useState([]);
+    const [text, setText] = useState('');
+    const bottomRef = useRef();
+    const socketRef = useRef();
+
+    useEffect(()=>{
+      if (!team) return;
+      api.get(`/messages/${team._id}`).then(m=>{ if (!m.error) setMessages(m); });
+      const socket = io(window.location.origin);
+      socket.emit('join-team', team._id);
+      socket.on('new-message', (msg)=>setMessages(prev=>[...prev, msg]));
+      socketRef.current = socket;
+      return ()=>socket.disconnect();
+    },[team]);
+
+    useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:'smooth'}); },[messages]);
+
+    const send = async () => {
+      if (!text.trim()) return;
+      const msg = await api.post(`/messages/${team._id}`, { text });
+      if (!msg.error) {
+        socketRef.current?.emit('team-message', { ...msg, teamId: team._id });
+        setMessages(prev=>[...prev,msg]);
+      }
+      setText('');
+    };
+
+    return (
+      <div className="page" style={{paddingBottom:0}}>
+        <div className="chat-container">
+          <div className="chat-messages">
+            {messages.map((m,i)=>(
+              <div key={i}>
+                {m.sender?._id!==user?._id && <div className="chat-sender">{m.sender?.name||'?'} <span style={{fontSize:9,color:'var(--text-dim)',textTransform:'uppercase'}}>{m.sender?.role}</span></div>}
+                <div className={`chat-bubble ${m.sender?._id===user?._id||m.sender===user?._id?'sent':'received'}`}>{m.text}</div>
+              </div>
+            ))}
+            {messages.length===0 && <div className="empty-state">No messages yet — start the conversation!</div>}
+            <div ref={bottomRef}/>
+          </div>
+          <div className="chat-input-bar">
+            <input className="input" placeholder="Type a message..." value={text}
+              onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()}/>
+            <button className="btn btn-primary btn-sm" onClick={send}>Send</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== MAIN APP =====
+  function App() {
+    const [user, setUser] = useState(null);
+    const [team, setTeam] = useState(null);
+    const [events, setEvents] = useState([]);
+    const [evaluations, setEvaluations] = useState([]);
+    const [practices, setPractices] = useState([]);
+    const [page, setPage] = useState('home');
+    const [trainingTab, setTrainingTab] = useState('playbooks');
+    const [loading, setLoading] = useState(true);
+    const [toast, setToast] = useState(null);
+    const [theme, setTheme] = useState(getInitialTheme);
+
+    const showToast = (msg, type='success') => {
+      setToast({msg,type,key:Date.now()});
+    };
+
+    const toggleTheme = () => {
+      const next = theme==='dark'?'light':'dark';
+      setTheme(next); applyTheme(next);
+    };
+
+    const loadTeam = async () => {
+      const teams = await api.get('/teams');
+      if (!teams.error && teams.length > 0) {
+        const full = await api.get(`/teams/${teams[0]._id}`);
+        setTeam(full);
+        const [evts, evals, pracs] = await Promise.all([
+          api.get(`/schedule/${teams[0]._id}`),
+          api.get(`/evaluations/${teams[0]._id}`),
+          api.get(`/practices/${teams[0]._id}`)
+        ]);
+        if (!evts.error) setEvents(evts);
+        if (!evals.error) setEvaluations(evals);
+        if (!pracs.error) setPractices(pracs);
+      }
+    };
+
+    useEffect(()=>{
+      const token = localStorage.getItem('token');
+      if (token) {
+        api.get('/auth/me').then(u=>{
+          if (!u.error) { setUser(u); loadTeam().finally(()=>setLoading(false)); }
+          else { localStorage.removeItem('token'); setLoading(false); }
+        }).catch(()=>{ localStorage.removeItem('token'); setLoading(false); });
+      } else { setLoading(false); }
+    },[]);
+
+    const refreshEvents = async () => {
+      if (!team) return;
+      const evts = await api.get(`/schedule/${team._id}`);
+      if (!evts.error) setEvents(evts);
+    };
+
+    const refreshTeam = async () => {
+      if (!team) return;
+      const full = await api.get(`/teams/${team._id}`);
+      if (!full.error) setTeam(full);
+    };
+
+    const navigate = (pg, subTab) => {
+      setPage(pg);
+      if (subTab && pg==='training') setTrainingTab(subTab);
+    };
+
+    const logout = () => { localStorage.removeItem('token'); setUser(null); setTeam(null); };
+
+    if (loading) return (
+      <div className="loading">
+        <div className="spinner"/>
+        <p>Loading Team Matrix...</p>
+      </div>
+    );
+
+    if (!user) return <AuthScreen onLogin={(u)=>{ setUser(u); loadTeam(); }}/>;
+    if (!team) return <TeamSetup user={user} onTeamReady={(t)=>{ setTeam(t); loadTeam(); }}/>;
+
+    const tabs = [
+      { id:'home',     icon: I.home,     label:'Home' },
+      { id:'roster',   icon: I.users,    label:'Roster' },
+      { id:'schedule', icon: I.calendar, label:'Schedule' },
+      { id:'training', icon: I.training, label:'Training' },
+      { id:'chat',     icon: I.chat,     label:'Chat' },
+    ];
+
+    return (
+      <div>
+        {toast && <Toast key={toast.key} msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+
+        <div className="header">
+          <div className="header-brand">
+            <h1>TEAM MATRIX</h1>
+            <div className="subtitle">{team.name} · {team.sport}</div>
+          </div>
+          <div className="header-actions">
+            <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
+              {theme==='dark' ? I.sun : I.moon}
+            </button>
+            <button className="theme-toggle" onClick={logout} title="Logout">
+              {I.logout}
+            </button>
+          </div>
+        </div>
+
+        {page==='home'     && <Dashboard team={team} events={events} user={user} evaluations={evaluations} practices={practices} onNavigate={navigate}/>}
+        {page==='roster'   && <Roster team={team} user={user} evaluations={evaluations} onToast={showToast}/>}
+        {page==='schedule' && <Schedule team={team} events={events} user={user} refreshEvents={refreshEvents} onToast={showToast}/>}
+        {page==='training' && <Training team={team} user={user} evaluations={evaluations} setEvaluations={setEvaluations} refreshTeam={refreshTeam} onToast={showToast} initTab={trainingTab}/>}
+        {page==='chat'     && <Chat team={team} user={user}/>}
+
+        <nav className="nav">
+          {tabs.map(t=>(
+            <button key={t.id} className={`nav-item ${page===t.id?'active':''}`} onClick={()=>setPage(t.id)}>
+              {t.icon}{t.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
