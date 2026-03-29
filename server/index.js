@@ -8,6 +8,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
+import session from 'express-session';
+import passport from 'passport';
 import authRoutes from './routes/auth.js';
 import teamRoutes from './routes/team.js';
 import rosterRoutes from './routes/roster.js';
@@ -17,6 +19,7 @@ import messageRoutes from './routes/messages.js';
 import evaluationRoutes from './routes/evaluations.js';
 import drillRoutes from './routes/drills.js';
 import practiceRoutes from './routes/practices.js';
+import oauthRoutes from './routes/oauth.js';
 import Drill from './models/Drill.js';
 
 dotenv.config();
@@ -33,6 +36,14 @@ const io = new Server(server, { cors: { origin: '*' } });
 
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true })); // needed for Apple's POST callback
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'tm-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: process.env.NODE_ENV === 'production', maxAge: 10 * 60 * 1000 } // 10 min, just for OAuth flow
+}));
+app.use(passport.initialize());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/app', express.static(path.join(__dirname, '../client')));
 
@@ -45,6 +56,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/drills', drillRoutes);
 app.use('/api/practices', practiceRoutes);
+app.use('/api/oauth', oauthRoutes);
 
 app.get('/api/health', (req, res) => {
   const dbState = mongoose.connection.readyState;
