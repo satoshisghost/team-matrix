@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Team Matrix — Quick Start Guide</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a1a;
+      --card: #111128;
+      --surface: #1a1a3e;
+      --accent: #00d4ff;
+      --accent2: #ff3d71;
+      --accent3: #00e676;
+      --accent4: #a855f7;
+      --text: #e8e8f0;
+      --dim: #7a7a9e;
+      --border: rgba(0,212,255,0.15);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: 'Exo 2', sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6;
+    }
+    body::before {
+      content:''; position:fixed; inset:0;
+      background: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px; z-index:0; pointer-events:none;
+      animation: gridMove 20s linear infinite;
+    }
+    @keyframes gridMove { 0%{transform:translate(0,0)} 100%{transform:translate(60px,60px)} }
+
+    .wrap { max-width: 800px; margin: 0 auto; padding: 40px 20px 80px; position:relative; z-index:1; }
+
+    /* HEADER */
+    .hero { text-align:center; padding: 48px 0 40px; }
+    .logo {
+      font-family:'Orbitron',sans-serif; font-size:36px; font-weight:900;
+      background: linear-gradient(135deg, var(--accent), var(--accent4));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      letter-spacing:4px; margin-bottom:8px;
+    }
+    .tagline { color:var(--dim); font-size:13px; letter-spacing:3px; text-transform:uppercase; margin-bottom:24px; }
+    .role-tabs { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+    .role-tab {
+      padding:10px 28px; border-radius:24px; border:2px solid var(--border);
+      background:var(--surface); color:var(--dim); cursor:pointer;
+      font-family:'Exo 2',sans-serif; font-weight:700; font-size:14px;
+      text-transform:uppercase; letter-spacing:1px; transition:all 0.25s;
+    }
+    .role-tab.active { background:var(--accent); color:#000; border-color:var(--accent); }
+    .role-tab:hover:not(.active) { border-color:var(--accent); color:var(--accent); }
+
+    /* SECTIONS */
+    .section { display:none; }
+    .section.active { display:block; }
+
+    /* STEP */
+    .step {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:16px; padding:24px; margin-bottom:16px;
+      position:relative; overflow:hidden;
+    }
+    .step::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:2px;
+      background:linear-gradient(90deg, transparent, var(--accent), transparent);
+    }
+    .step-header { display:flex; align-items:flex-start; gap:16px; margin-bottom:14px; }
+    .step-num {
+      width:36px; height:36px; border-radius:50%; flex-shrink:0;
+      background:linear-gradient(135deg, var(--accent), var(--accent4));
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Orbitron',sans-serif; font-weight:900; font-size:14px; color:#000;
+    }
+    .step-title { font-family:'Orbitron',sans-serif; font-size:14px; font-weight:700; color:var(--accent); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px; }
+    .step-sub { font-size:13px; color:var(--dim); }
+    .step-body { font-size:14px; color:var(--text); line-height:1.7; }
+    .step-body ul { padding-left:20px; margin-top:8px; }
+    .step-body li { margin-bottom:6px; }
+    .step-body strong { color:var(--accent); }
+
+    /* SCREEN MOCK */
+    .screen-mock {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:12px; margin-top:14px; overflow:hidden;
+    }
+    .mock-header {
+      background:rgba(0,212,255,0.08); border-bottom:1px solid var(--border);
+      padding:10px 16px; display:flex; align-items:center; justify-content:space-between;
+    }
+    .mock-title { font-family:'Orbitron',sans-serif; font-size:11px; color:var(--accent); letter-spacing:2px; }
+    .mock-body { padding:14px 16px; }
+    .mock-row {
+      display:flex; align-items:center; gap:10px;
+      padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.04);
+      font-size:13px;
+    }
+    .mock-row:last-child { border-bottom:none; }
+    .mock-avatar {
+      width:34px; height:34px; border-radius:50%; flex-shrink:0;
+      background:linear-gradient(135deg, var(--accent), var(--accent4));
+      display:flex; align-items:center; justify-content:center;
+      font-weight:900; font-size:12px; color:#000;
+    }
+    .mock-badge {
+      display:inline-block; padding:2px 8px; border-radius:12px;
+      font-size:10px; font-weight:700; text-transform:uppercase;
+    }
+    .b-game { background:var(--accent2); color:#fff; }
+    .b-practice { background:var(--accent3); color:#000; }
+    .b-meet { background:var(--accent4); color:#fff; }
+    .b-travel { background:#f5a623; color:#000; }
+    .mock-stat { background:var(--card); border-radius:10px; padding:10px; text-align:center; flex:1; }
+    .mock-stat-num { font-family:'Orbitron',sans-serif; font-size:22px; font-weight:900; color:var(--accent); }
+    .mock-stat-label { font-size:9px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; }
+    .mock-nav {
+      display:flex; justify-content:space-around; padding:10px 0;
+      border-top:1px solid var(--border); background:rgba(10,10,26,0.8);
+    }
+    .mock-nav-item { text-align:center; font-size:9px; color:var(--dim); text-transform:uppercase; letter-spacing:1px; padding:4px 8px; }
+    .mock-nav-item.active { color:var(--accent); }
+    .mock-invite {
+      font-family:'Orbitron',sans-serif; font-size:22px; font-weight:900;
+      color:var(--accent); text-align:center; padding:14px;
+      background:var(--card); border:2px dashed var(--border);
+      border-radius:10px; letter-spacing:6px; margin:10px 0;
+    }
+    .mock-score-bar { display:flex; gap:3px; margin-top:4px; }
+    .pip { flex:1; height:5px; border-radius:3px; background:var(--surface); }
+    .pip.on-green { background:var(--accent3); }
+    .pip.on-cyan { background:var(--accent); }
+    .pip.on-red { background:var(--accent2); }
+    .mock-drill {
+      background:var(--card); border-radius:10px; padding:12px; margin-bottom:8px;
+    }
+    .mock-drill-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; }
+    .mock-drill-name { font-weight:600; font-size:13px; }
+
+    /* TIP BOX */
+    .tip {
+      background:rgba(0,212,255,0.07); border:1px solid rgba(0,212,255,0.2);
+      border-radius:10px; padding:12px 16px; margin-top:12px;
+      font-size:13px; display:flex; gap:10px; align-items:flex-start;
+    }
+    .tip-icon { font-size:16px; flex-shrink:0; margin-top:1px; }
+
+    /* SECTION TITLE */
+    .section-heading {
+      text-align:center; margin:32px 0 20px;
+    }
+    .section-heading h2 {
+      font-family:'Orbitron',sans-serif; font-size:18px; font-weight:700;
+      color:var(--accent); letter-spacing:3px; text-transform:uppercase;
+    }
+    .section-heading p { font-size:13px; color:var(--dim); margin-top:6px; }
+
+    /* BACK TO APP */
+    .back-btn {
+      display:block; text-align:center; margin:32px auto 0;
+      padding:14px 32px; background:linear-gradient(135deg, var(--accent), #0099cc);
+      color:#000; font-family:'Exo 2',sans-serif; font-weight:700; font-size:15px;
+      border-radius:12px; text-decoration:none; text-transform:uppercase;
+      letter-spacing:1px; max-width:280px;
+      box-shadow:0 4px 20px rgba(0,212,255,0.3);
+    }
+    .back-btn:hover { opacity:0.9; }
+
+    @media(max-width:500px) {
+      .logo { font-size:26px; }
+      .step { padding:18px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="logo">TEAM MATRIX</div>
+    <div class="tagline">Quick Start Guide</div>
+    <div class="role-tabs">
+      <button class="role-tab active" onclick="showRole('coach')">🏈 Coach / Staff</button>
+      <button class="role-tab" onclick="showRole('player')">⚡ Player</button>
+    </div>
+  </div>
+
+  <!-- ===================== COACH GUIDE ===================== -->
+  <div class="section active" id="coach">
+
+    <div class="section-heading">
+      <h2>Coach Quick Start</h2>
+      <p>Get your team set up and running in under 5 minutes</p>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Create Your Account</div>
+          <div class="step-sub">Sign in screen</div>
+        </div>
+      </div>
+      <div class="step-body">
+        On the login screen you have two options:
+        <ul>
+          <li>Click <strong>Continue with Google</strong> for instant one-click sign in</li>
+          <li>Or fill in email + password and select <strong>Coach</strong> as your role</li>
+        </ul>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-header"><div class="mock-title">Sign In</div></div>
+        <div class="mock-body">
+          <div style="background:#fff;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px;cursor:pointer;">
+            <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            <span style="font-size:13px;color:#3c4043;font-weight:600;">Continue with Google</span>
+          </div>
+          <div style="text-align:center;font-size:11px;color:var(--dim);margin:8px 0;">— OR —</div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--dim);margin-bottom:6px;">Email address</div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--dim);margin-bottom:10px;">Password</div>
+          <div style="background:linear-gradient(135deg,#00d4ff,#0099cc);border-radius:8px;padding:10px;text-align:center;font-weight:700;font-size:13px;color:#000;">SIGN IN</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Create Your Team</div>
+          <div class="step-sub">Team setup screen</div>
+        </div>
+      </div>
+      <div class="step-body">
+        After signing in you'll be prompted to set up a team:
+        <ul>
+          <li>Click <strong>Create a Team</strong></li>
+          <li>Enter your <strong>Team Name</strong> (e.g. "Las Vegas Vipers")</li>
+          <li>Select your <strong>Sport</strong> and <strong>Level</strong></li>
+          <li>Tap <strong>Create Team</strong> — done!</li>
+        </ul>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-header"><div class="mock-title">Team Setup</div></div>
+        <div class="mock-body">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:6px;">Las Vegas Vipers</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+            <div style="background:var(--surface);border:1px solid var(--accent);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--accent);">Football ▾</div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--dim);">High School ▾</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#00e676,#00b35a);border-radius:8px;padding:10px;text-align:center;font-weight:700;font-size:13px;color:#000;">CREATE TEAM</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Share Your Invite Code</div>
+          <div class="step-sub">Home screen</div>
+        </div>
+      </div>
+      <div class="step-body">
+        Your team gets a unique 6-letter invite code. Share it with your players so they can join:
+        <ul>
+          <li>The code appears on the <strong>Home</strong> screen in a big box</li>
+          <li>Players enter this code when they sign up to join your team</li>
+          <li>Screenshot it and send it via text, email, or group chat</li>
+        </ul>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-header"><div class="mock-title">Home — Invite Code</div></div>
+        <div class="mock-body">
+          <div class="mock-invite">VIP3RS</div>
+          <div style="text-align:center;font-size:11px;color:var(--dim);">Share this code with players to join your team</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">Schedule Events</div>
+          <div class="step-sub">Schedule tab</div>
+        </div>
+      </div>
+      <div class="step-body">
+        Tap the <strong>Schedule</strong> tab at the bottom → tap <strong>+ New Event</strong>:
+        <ul>
+          <li>Set title, type (Game / Practice / Travel / Meeting)</li>
+          <li>For games — add opponent name and Home/Away</li>
+          <li>Add date, time, location, and notes</li>
+          <li>All players are auto-added and can RSVP</li>
+        </ul>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-header"><div class="mock-title">Schedule</div></div>
+        <div class="mock-body">
+          <div class="mock-row">
+            <div style="flex:1">
+              <div style="margin-bottom:4px;"><span class="mock-badge b-game">Game</span> <span style="font-size:10px;color:var(--dim);">AWAY</span></div>
+              <div style="font-weight:600;font-size:14px;">vs Panthers</div>
+              <div style="font-size:11px;color:var(--dim);">Fri, Apr 4 · 6:00 PM · Lincoln Stadium</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:11px;color:var(--accent3);">✅ 18</div>
+              <div style="font-size:11px;color:var(--accent2);">❌ 2</div>
+            </div>
+          </div>
+          <div class="mock-row">
+            <div style="flex:1">
+              <div style="margin-bottom:4px;"><span class="mock-badge b-practice">Practice</span></div>
+              <div style="font-weight:600;font-size:14px;">Tuesday Practice</div>
+              <div style="font-size:11px;color:var(--dim);">Tue, Apr 1 · 4:00 PM · Home Field</div>
+            </div>
+          </div>
+          <div class="mock-row">
+            <div style="flex:1">
+              <div style="margin-bottom:4px;"><span class="mock-badge b-meet">Meeting</span></div>
+              <div style="font-weight:600;font-size:14px;">Film Review</div>
+              <div style="font-size:11px;color:var(--dim);">Mon, Mar 31 · 3:00 PM · Film Room</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">5</div>
+        <div>
+          <div class="step-title">Build Practice Plans</div>
+          <div class="step-sub">Training → Practice tab</div>
+        </div>
+      </div>
+      <div class="step-body">
+        Go to <strong>Training</strong> → tap <strong>Practice</strong> sub-tab → <strong>+ New Practice Plan</strong>:
+        <ul>
+          <li>Give the session a title and date</li>
+          <li>Add session <strong>goals</strong> (one per line)</li>
+          <li>Tap <strong>+ Add Drill</strong> to pick from the drill library</li>
+          <li>Drills auto-calculate total session time</li>
+          <li>Save and share with your team</li>
+        </ul>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-header"><div class="mock-title">Practice Plan — Week 4 Offense</div></div>
+        <div class="mock-body">
+          <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Session Goals</div>
+          <div style="font-size:13px;margin-bottom:4px;">✓ Improve red zone efficiency</div>
+          <div style="font-size:13px;margin-bottom:12px;">✓ Work on 3rd down conversions</div>
+          <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">Drills · 65 min total</div>
+          <div class="mock-drill">
+            <div class="mock-drill-header">
+              <span style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--accent);">1</span>
+              <div class="mock-drill-name">QB Footwork Drops</div>
+              <span style="font-size:11px;color:var(--dim);">10 min</span>
+            </div>
+          </div>
+          <div class="mock-drill">
+            <div class="mock-drill-header">
+              <span style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--accent);">2</span>
+              <div class="mock-drill-name">Route Running - 7 Routes</div>
+              <span style="font-size:11px;color:var(--dim);">15 min</span>
+            </div>
+          </div>
+          <div class="mock-drill">
+            <div class="mock-drill-header">
+              <span style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--accent);">3</span>
+              <div class="mock-drill-name">Red Zone Passing</div>
+              <span style="font-size:11px;color:var(--dim);">15 min</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">6</div>
+        <div>
+          <div class="step-title">Evaluate Players</div>
+          <div class="step-sub">Training → Evaluations tab</div>
+        </div>
+      </div>
+      <div class="step-body">
+        Go to <strong>Training</strong> → <strong>Evaluations</strong> → <strong>+ New Evaluation</strong>:
+        <ul>
+          <li>Select a player from the dropdown</li>
+          <li>Rate them 1–10 on 5 criteria by tapping the dots</li>
+          <li>Add coach notes</li>
+          <li>Overall score auto-calculates from all criteria</li>
+          <li>Player rankings card updates automatically</li>
+        </ul>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-header"><div class="mock-title">Player Evaluation</div></div>
+        <div class="mock-body">
+          <div style="margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--dim);">Speed / Athleticism</span><span style="font-family:'Orbitron',sans-serif;color:var(--accent3);font-weight:700;">8</span></div>
+            <div class="mock-score-bar">${Array(10).fill(0).map((_,i)=>`<div class="pip ${i<8?'on-green':''}"></div>`).join('')}</div>
+          </div>
+          <div style="margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--dim);">Football IQ</span><span style="font-family:'Orbitron',sans-serif;color:var(--accent);font-weight:700;">7</span></div>
+            <div class="mock-score-bar">${Array(10).fill(0).map((_,i)=>`<div class="pip ${i<7?'on-cyan':''}"></div>`).join('')}</div>
+          </div>
+          <div style="margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:var(--dim);">Effort / Attitude</span><span style="font-family:'Orbitron',sans-serif;color:var(--accent3);font-weight:700;">9</span></div>
+            <div class="mock-score-bar">${Array(10).fill(0).map((_,i)=>`<div class="pip ${i<9?'on-green':''}"></div>`).join('')}</div>
+          </div>
+          <div style="text-align:center;margin-top:12px;">
+            <div style="font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;">Overall Score</div>
+            <div style="font-family:'Orbitron',sans-serif;font-size:32px;font-weight:900;color:var(--accent3);">8.0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 7 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">7</div>
+        <div>
+          <div class="step-title">Upload Playbooks</div>
+          <div class="step-sub">Training → Playbooks tab</div>
+        </div>
+      </div>
+      <div class="step-body">
+        Go to <strong>Training</strong> → <strong>Playbooks</strong> → <strong>+ Upload Playbook / Video</strong>:
+        <ul>
+          <li>Upload videos, PDFs, or images (up to 50MB)</li>
+          <li>Tap <strong>📧 Email</strong> to send to the whole team instantly</li>
+          <li>Tap <strong>💬 WhatsApp</strong> to share via WhatsApp</li>
+          <li>Tap <strong>View</strong> to open the file</li>
+        </ul>
+      </div>
+      <div class="tip"><div class="tip-icon">💡</div><div>Pro tip: Upload your game film as a video file so players can review it before the next practice.</div></div>
+    </div>
+
+    <!-- STEP 8 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">8</div>
+        <div>
+          <div class="step-title">Set Your Depth Chart</div>
+          <div class="step-sub">Roster → Depth Chart tab</div>
+        </div>
+      </div>
+      <div class="step-body">
+        Go to <strong>Roster</strong> → tap <strong>Depth Chart</strong> → tap <strong>Edit</strong>:
+        <ul>
+          <li>Select your <strong>Formation</strong> (4-3, 3-4, Spread, etc.)</li>
+          <li>Tap each position and assign players in order</li>
+          <li>First player = starter, second = backup</li>
+          <li>Tap <strong>Save</strong> — players can now see their depth chart</li>
+        </ul>
+      </div>
+      <div class="tip"><div class="tip-icon">💡</div><div>Players can see the depth chart but only coaches can edit it.</div></div>
+    </div>
+
+    <!-- STEP 9 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">9</div>
+        <div>
+          <div class="step-title">Team Chat</div>
+          <div class="step-sub">Chat tab</div>
+        </div>
+      </div>
+      <div class="step-body">
+        Tap the <strong>Chat</strong> tab at the bottom for real-time team messaging:
+        <ul>
+          <li>Messages are delivered instantly to everyone on the team</li>
+          <li>Your role (Coach) shows next to your name</li>
+          <li>Great for quick reminders, hype messages, and updates</li>
+        </ul>
+      </div>
+      <div class="tip"><div class="tip-icon">💡</div><div>Use Chat for day-of reminders like "Arrive 30 min early, bring your white jerseys."</div></div>
+    </div>
+
+    <a class="back-btn" href="/">← Back to Team Matrix</a>
+
+  </div>
+
+  <!-- ===================== PLAYER GUIDE ===================== -->
+  <div class="section" id="player">
+
+    <div class="section-heading">
+      <h2>Player Quick Start</h2>
+      <p>Get on your team and stay connected in minutes</p>
+    </div>
+
+    <!-- STEP 1 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Create Your Account</div>
+          <div class="step-sub">Sign in screen</div>
+        </div>
+      </div>
+      <div class="step-body">
+        On the login screen tap <strong>Sign Up</strong>:
+        <ul>
+          <li>Tap <strong>Continue with Google</strong> for instant one-click sign up — easiest option</li>
+          <li>Or enter your name, phone, email, password</li>
+          <li>Select <strong>Player</strong> as your role</li>
+        </ul>
+      </div>
+      <div class="tip"><div class="tip-icon">💡</div><div>Use the same email your coach has on file for you so they can find you on the roster.</div></div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Join Your Team</div>
+          <div class="step-sub">Team setup screen</div>
+        </div>
+      </div>
+      <div class="step-body">
+        After signing in you'll see the team setup screen:
+        <ul>
+          <li>Tap <strong>Join with Invite Code</strong></li>
+          <li>Enter the <strong>6-letter code</strong> your coach gave you</li>
+          <li>Tap <strong>Join Team</strong> — you're in!</li>
+        </ul>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-header"><div class="mock-title">Join a Team</div></div>
+        <div class="mock-body">
+          <div style="font-family:'Orbitron',sans-serif;font-size:22px;font-weight:900;color:var(--accent);text-align:center;padding:14px;background:var(--card);border:2px dashed var(--border);border-radius:10px;letter-spacing:6px;margin-bottom:12px;">VIP3RS</div>
+          <div style="background:linear-gradient(135deg,#00e676,#00b35a);border-radius:8px;padding:10px;text-align:center;font-weight:700;font-size:13px;color:#000;">JOIN TEAM</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Check the Schedule</div>
+          <div class="step-sub">Schedule tab</div>
+        </div>
+      </div>
+      <div class="step-body">
+        Tap <strong>Schedule</strong> at the bottom to see all upcoming events:
+        <ul>
+          <li>Games, practices, travel, and meetings all show here</li>
+          <li>Tap <strong>✅ Going</strong> or <strong>❌ Can't Go</strong> to RSVP</li>
+          <li>Your coach can see who's coming — always RSVP!</li>
+          <li>Switch between <strong>Upcoming</strong>, <strong>Past</strong>, and <strong>All</strong></li>
+        </ul>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-header"><div class="mock-title">Schedule</div></div>
+        <div class="mock-body">
+          <div class="mock-row" style="flex-direction:column;align-items:flex-start;gap:8px;">
+            <div><span class="mock-badge b-game">Game</span> <span style="font-size:10px;color:var(--dim);">AWAY</span></div>
+            <div style="font-weight:600;font-size:14px;">vs Panthers</div>
+            <div style="font-size:11px;color:var(--dim);">Fri, Apr 4 · 6:00 PM · Lincoln Stadium</div>
+            <div style="display:flex;gap:8px;width:100%;">
+              <div style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--accent3);background:var(--accent3);color:#000;text-align:center;font-size:11px;font-weight:700;">✅ GOING</div>
+              <div style="flex:1;padding:7px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--dim);text-align:center;font-size:11px;font-weight:700;">❌ CAN'T GO</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">View Your Roster</div>
+          <div class="step-sub">Roster tab</div>
+        </div>
+      </div>
+      <div class="step-body">
+        Tap <strong>Roster</strong> to see your teammates:
+        <ul>
+          <li>See everyone's name, number, and position</li>
+          <li>Player ratings show if your coach has evaluated you</li>
+          <li>Tap <strong>Depth Chart</strong> to see where you rank at your position</li>
+        </ul>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-header"><div class="mock-title">Roster</div></div>
+        <div class="mock-body">
+          <div class="mock-row">
+            <div class="mock-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">C</div>
+            <div style="flex:1"><div style="font-weight:600;font-size:14px;">Coach Williams</div><div style="font-size:11px;color:var(--dim);">Head Coach</div></div>
+          </div>
+          <div class="mock-row">
+            <div class="mock-avatar">7</div>
+            <div style="flex:1"><div style="font-weight:600;font-size:14px;">#7 Marcus Johnson</div><div style="font-size:11px;color:var(--dim);">QB · player</div></div>
+            <div style="text-align:center"><div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:var(--accent3);">8.2</div><div style="font-size:9px;color:var(--dim);text-transform:uppercase;">Rating</div></div>
+          </div>
+          <div class="mock-row">
+            <div class="mock-avatar">22</div>
+            <div style="flex:1"><div style="font-weight:600;font-size:14px;">#22 DeShawn Carter</div><div style="font-size:11px;color:var(--dim);">RB · player</div></div>
+            <div style="text-align:center"><div style="font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:var(--accent);">7.4</div><div style="font-size:9px;color:var(--dim);text-transform:uppercase;">Rating</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">5</div>
+        <div>
+          <div class="step-title">Study Playbooks & Drills</div>
+          <div class="step-sub">Training tab</div>
+        </div>
+      </div>
+      <div class="step-body">
+        Tap <strong>Training</strong> at the bottom:
+        <ul>
+          <li><strong>Playbooks</strong> — view videos and PDFs your coach uploaded. Tap <strong>View</strong> to open any file</li>
+          <li><strong>Drills</strong> — browse the full drill library. Filter by Offense, Defense, Conditioning, etc.</li>
+          <li><strong>Practice</strong> — see what's planned for each upcoming session</li>
+          <li><strong>Evaluations</strong> — view your performance scores from your coach</li>
+        </ul>
+      </div>
+      <div class="tip"><div class="tip-icon">💡</div><div>Check the Practice tab before each session so you know exactly what drills are planned and how long each one runs.</div></div>
+    </div>
+
+    <!-- STEP 6 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">6</div>
+        <div>
+          <div class="step-title">View Your Evaluations</div>
+          <div class="step-sub">Training → Evaluations tab</div>
+        </div>
+      </div>
+      <div class="step-body">
+        Go to <strong>Training</strong> → <strong>Evaluations</strong> to see your coach's ratings:
+        <ul>
+          <li>Scores out of 10 across 5 categories</li>
+          <li>Read your coach's personal notes</li>
+          <li>Track how your score changes over the season</li>
+        </ul>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-header"><div class="mock-title">My Evaluations</div></div>
+        <div class="mock-body">
+          <div style="background:var(--surface);border-radius:10px;padding:14px;margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+              <div><div style="font-weight:700;font-size:14px;">Marcus Johnson</div><div style="font-size:11px;color:var(--dim);">QB · by Coach Williams</div></div>
+              <div style="text-align:right;"><div style="font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;color:var(--accent3);">8.0</div><div style="font-size:10px;color:var(--dim);">Mar 28</div></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);"><span style="color:var(--dim);">Speed / Athleticism</span><span style="font-weight:700;color:var(--accent3);">8/10</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);"><span style="color:var(--dim);">Football IQ</span><span style="font-weight:700;color:var(--accent3);">9/10</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;"><span style="color:var(--dim);">Effort / Attitude</span><span style="font-weight:700;color:var(--accent3);">9/10</span></div>
+            <div style="margin-top:10px;font-size:12px;color:var(--dim);font-style:italic;">"Strong week — improved footwork on the 5-step drop."</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 7 -->
+    <div class="step">
+      <div class="step-header">
+        <div class="step-num">7</div>
+        <div>
+          <div class="step-title">Team Chat</div>
+          <div class="step-sub">Chat tab</div>
+        </div>
+      </div>
+      <div class="step-body">
+        Tap <strong>Chat</strong> for real-time team messaging:
+        <ul>
+          <li>Send messages to the whole team instantly</li>
+          <li>Your coach uses this for important announcements</li>
+          <li>Check it before every practice and game</li>
+          <li>Press <strong>Enter</strong> or tap <strong>Send</strong> to send a message</li>
+        </ul>
+      </div>
+      <div class="screen-mock">
+        <div class="mock-header"><div class="mock-title">Team Chat</div></div>
+        <div class="mock-body">
+          <div style="margin-bottom:8px;">
+            <div style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:2px;">Coach Williams <span style="color:var(--dim);text-transform:uppercase;">coach</span></div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;border-bottom-left-radius:4px;padding:9px 14px;font-size:13px;max-width:80%;">White jerseys for Friday. Arrive at 5:30 sharp. 🏈</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;margin-bottom:8px;">
+            <div style="background:var(--accent);color:#000;border-radius:12px;border-bottom-right-radius:4px;padding:9px 14px;font-size:13px;max-width:80%;">Got it coach! See you there 💪</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;color:var(--dim);">Type a message...</div>
+            <div style="background:linear-gradient(135deg,var(--accent),#0099cc);border-radius:8px;padding:9px 14px;font-size:12px;font-weight:700;color:#000;">Send</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a class="back-btn" href="/">← Back to Team Matrix</a>
+
+  </div>
+
+</div>
+
+<script>
+  function showRole(role) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.role-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(role).classList.add('active');
+    event.target.classList.add('active');
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+</script>
+</body>
+</html>

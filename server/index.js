@@ -58,6 +58,10 @@ app.use('/api/drills', drillRoutes);
 app.use('/api/practices', practiceRoutes);
 app.use('/api/oauth', oauthRoutes);
 
+app.get('/tutorial', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/tutorial.html'));
+});
+
 app.get('/api/health', (req, res) => {
   const dbState = mongoose.connection.readyState;
   const states = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
